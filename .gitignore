@@ -3,6 +3,9 @@ __pycache__/
 *.py[codz]
 *$py.class
 
+#docker
+.dockerignore
+
 # C extensions
 *.so
 
@@ -205,3 +208,6 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+
+.conda/
