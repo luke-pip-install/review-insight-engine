@@ -17,6 +17,7 @@ from crawler.run import (
     SEARCHBOX_NAME,
     collect_hotel_urls_from_results,
     collect_hotel_name,
+    collect_reviews,
 )
 
 st.title("Google Travel Hotel Scraper")
@@ -54,6 +55,7 @@ if st.button("Search and Collect"):
 
                 for url in hotel_urls:
                     name = collect_hotel_name(page, url)
+                    # print(url, name)
                     if name:
                         hotel_names.append(name)
 
