@@ -187,7 +187,8 @@ def collect_reviews(page) -> List[str]:
     expand_all_read_more(page)
     
     # Step 2: Collect
-    review_elements = page.locator('.K7oBsc')
+    review_elements = page.locator('.STQFb.eoY5cb .K7oBsc')
+    # containers = page.locator('.jftiEf, .WIwmTb, [data-review-id]')
     reviews = []
     for i in range(review_elements.count()):
         text = review_elements.nth(i).inner_text().strip()
@@ -195,7 +196,6 @@ def collect_reviews(page) -> List[str]:
             reviews.append(text)
     
     return reviews
-
 def main():
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=False)

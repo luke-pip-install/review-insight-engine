@@ -18,6 +18,7 @@ from crawler.run import (
     collect_hotel_urls_from_results,
     collect_hotel_name,
     collect_reviews,
+    scroll_until_end,
 )
 
 st.title("Google Travel Hotel Scraper")
@@ -39,7 +40,7 @@ def fetch_reviews():
         return
     url = st.session_state.hotels.get(chosen)
     if not url:
-        st.error("No URL for selected hotel.")
+        st.session_state.reviews = []  # clear on error
         return
 
     with st.spinner(f"Collecting reviews for {chosen}..."):
@@ -50,17 +51,19 @@ def fetch_reviews():
                 page = context.new_page()
 
                 page.goto(url, wait_until="domcontentloaded")
-                page.wait_for_timeout(2000)  # let page load
-
-                reviews = collect_reviews(page, url)  # your function
+                page.wait_for_timeout(2000)
+                
+                scroll_until_end(page)
+                reviews = collect_reviews(page)  # only page arg
 
                 context.close()
                 browser.close()
 
             st.session_state.reviews = reviews
-            st.rerun()  # refresh to show results
+            # No st.rerun() needed here
         except Exception as e:
-            st.error(f"Error collecting reviews: {str(e)}")
+            st.session_state.reviews = []
+            st.session_state.fetch_error = f"Error: {str(e)}"
 
 if st.button("Search and Collect"):
     if not query.strip():
@@ -84,7 +87,7 @@ if st.button("Search and Collect"):
                     page.wait_for_timeout(1000)
                     search.press("Enter")
                     page.wait_for_timeout(3000)
-
+                    
                     hotel_urls = collect_hotel_urls_from_results(page, limit=None)
 
                     for url in hotel_urls:
@@ -117,6 +120,10 @@ if st.session_state.hotels:
     chosen = st.session_state.chosen_hotel
     if chosen:
         st.success(f"Selected: {chosen}")
+
+    if "fetch_error" in st.session_state:
+        st.error(st.session_state.fetch_error)
+        del st.session_state.fetch_error
 
 # Display reviews
 if st.session_state.reviews:

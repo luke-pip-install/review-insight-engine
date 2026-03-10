@@ -28,7 +28,8 @@ def collect_reviews(page) -> List[str]:
     expand_all_read_more(page)
     
     # Step 2: Collect
-    review_elements = page.locator('.K7oBsc')
+    review_elements = page.locator('.STQFb.eoY5cb .K7oBsc')
+    # containers = page.locator('.jftiEf, .WIwmTb, [data-review-id]')
     reviews = []
     for i in range(review_elements.count()):
         text = review_elements.nth(i).inner_text().strip()
@@ -36,6 +37,62 @@ def collect_reviews(page) -> List[str]:
             reviews.append(text)
     
     return reviews
+
+# SCROLLING
+def get_scroll_height(page) -> int:
+    return page.evaluate("() => document.body.scrollHeight")  # [web:16]
+
+
+def scroll_up_tiny(page, px=200, pause_ms=150):
+    page.mouse.wheel(0, -abs(px))  # negative deltaY scrolls up [web:4]
+    page.wait_for_timeout(pause_ms)
+
+
+def scroll_down_step(page, px=1000, pause_ms=150):
+    page.mouse.wheel(0, abs(px))  # positive deltaY scrolls down [web:4]
+    page.wait_for_timeout(pause_ms)
+
+
+def scroll_until_end(
+    page,
+    step_px=1000,
+    pause_ms=250,
+    rescue_up_px=200,
+    max_no_growth=3,
+    end_selector: str | None = None,
+):
+    page.wait_for_selector("body")
+
+    no_growth = 0
+    last_h = get_scroll_height(page)
+
+    while True:
+        if end_selector and page.locator(end_selector).first.is_visible():
+            print("finished")
+            return
+
+        scroll_down_step(page, px=step_px, pause_ms=pause_ms)
+        h1 = get_scroll_height(page)
+
+        if h1 > last_h:
+            last_h = h1
+            no_growth = 0
+            continue
+
+        # No growth after scrolling down -> try tiny scroll up once, then down again
+        scroll_up_tiny(page, px=rescue_up_px, pause_ms=pause_ms)
+        scroll_down_step(page, px=step_px, pause_ms=pause_ms)
+        h2 = get_scroll_height(page)
+
+        if h2 > last_h:
+            last_h = h2
+            no_growth = 0
+            continue
+
+        no_growth += 1
+        if no_growth >= max_no_growth:
+            print("finished")
+            return
 
 if __name__ == "__main__":
     link ='https://www.google.com/travel/search?q=hotels&gsas=1&qs=MiZDaGdJOTlDOHk1ZXM3SXlfQVJvTEwyY3ZNWFJtYWpNNWNIRVFBUTgNSAA&ts=CAEaRwonEiU6I0N1bWJlcmxhbmQgQ2l0eSBDb3VuY2lsLCBTeWRuZXkgTlNXEhwSFAoHCOoPEAQYBhIHCOoPEAQYBxgBMgQIABAAKgcKBToDQVVE&ap=MAC6AQdyZXZpZXdz&ved=0CAAQ5JsGahcKEwjY9pHvro-TAxUAAAAAHQAAAAAQBA'
@@ -49,9 +106,10 @@ if __name__ == "__main__":
         page.wait_for_timeout(3000)
 
         # CHECK BUTTONS
+        scroll_until_end(page)
         review = collect_reviews(page)
         print(review)
         
         print("✅ Done!")
-        page.wait_for_timeout(10000)
+        page.wait_for_timeout(5000)
         browser.close()
